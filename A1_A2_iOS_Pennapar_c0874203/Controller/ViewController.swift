@@ -31,13 +31,11 @@ class ViewController: UIViewController {
     
     var labels = [UILabel]()
     var currentLocation = CLLocation()
-
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         map.showsUserLocation = true
-        
         directBtn.isHidden = true
         
         locationMnager.delegate = self
@@ -50,13 +48,18 @@ class ViewController: UIViewController {
         // add triple tap for add markers
         addTripleTap()
         
+        //Setup for searching location
+        setUpforSearch()
+    }
+    
+    func setUpforSearch() {
         let locationSearchTable = storyboard!.instantiateViewController(withIdentifier: "LocationSearchTable") as! LocationSearchTable
         resultSearchController = UISearchController(searchResultsController: locationSearchTable)
-        resultSearchController?.searchResultsUpdater = locationSearchTable as! any UISearchResultsUpdating
+        resultSearchController?.searchResultsUpdater = locationSearchTable as? any UISearchResultsUpdating
         
-        let searchBar = resultSearchController!.searchBar
-        searchBar.sizeToFit()
-        searchBar.placeholder = "Search for places"
+        let searchBar = resultSearchController?.searchBar
+        searchBar?.sizeToFit()
+        searchBar?.placeholder = "Search for places"
         navigationItem.titleView = resultSearchController?.searchBar
         
         resultSearchController?.hidesNavigationBarDuringPresentation = false
@@ -65,6 +68,20 @@ class ViewController: UIViewController {
         
         locationSearchTable.mapView = map
         locationSearchTable.handleMapSearchDelegate = self
+    }
+    
+    //MARK: - Route guidance methods
+    
+    @IBAction func currentLocationAction(_ sender: Any) {
+        map.removeOverlays(map.overlays)
+        for label in labels {
+            label.removeFromSuperview()
+        }
+        if destination.count == 3 {
+            drawDestinationRoute(sourceCoordinate: destination[0], destinationCoordinate: destination[1])
+            drawDestinationRoute(sourceCoordinate: destination[1], destinationCoordinate: destination[2])
+            drawDestinationRoute(sourceCoordinate: destination[2], destinationCoordinate: destination[0])
+        }
     }
     
     func drawDestinationRoute(sourceCoordinate : CLLocationCoordinate2D , destinationCoordinate : CLLocationCoordinate2D){
@@ -95,31 +112,11 @@ class ViewController: UIViewController {
         }
     }
     
-    @IBAction func currentLocationAction(_ sender: Any) {
-        map.removeOverlays(map.overlays)
-        for label in labels {
-            label.removeFromSuperview()
-        }
-        if destination.count == 3 {
-            drawDestinationRoute(sourceCoordinate: destination[0], destinationCoordinate: destination[1])
-            drawDestinationRoute(sourceCoordinate: destination[1], destinationCoordinate: destination[2])
-            drawDestinationRoute(sourceCoordinate: destination[2], destinationCoordinate: destination[0])
-        }
-    }
-    
     //MARK: - double tap func
     func addTripleTap() {
-        let doubleTap = UITapGestureRecognizer(target: self, action: #selector(dropPin))
-        doubleTap.numberOfTapsRequired = 3
-        map.addGestureRecognizer(doubleTap)
-    }
-    
-    //MARK: - polyline method
-    func addPolyline() {
-        if  destination.count > 0 {
-            let polyline = MKPolyline(coordinates: destination, count: destination.count)
-            map.addOverlay(polyline)
-        }
+        let tripleTap = UITapGestureRecognizer(target: self, action: #selector(dropPin))
+        tripleTap.numberOfTapsRequired = 3
+        map.addGestureRecognizer(tripleTap)
     }
     
     //MARK: - polygon method
@@ -129,6 +126,8 @@ class ViewController: UIViewController {
             map.addOverlay(polygon)
         }
     }
+    
+    //MARK: - manage pin methods
     
     @objc func dropPin(sender: UITapGestureRecognizer) {
         
@@ -154,18 +153,19 @@ class ViewController: UIViewController {
                     return
                 }
             }
-            getLocationAddressAndAddPin(latitude: coordinate.latitude, longitude: coordinate.longitude)
+            setDetailAndAddPin(latitude: coordinate.latitude, longitude: coordinate.longitude)
+            
             points.append(CGPoint(x: touchPoint.x, y: touchPoint.y))
             destination.append(coordinate)
             dropCount += 1
             
             if dropCount == 3 {
-                //  addPolyline()
                 addPolygon()
                 addDistanceLable()
             }
         }
         else{
+            directBtn.isHidden = true
             citySelection = false
             removePin()
             dropCount = 0
@@ -182,31 +182,6 @@ class ViewController: UIViewController {
         }
     }
     
-    func addDistanceLable(){
-        let distance = calculatedistance(from: destination[0], to: destination[1])
-        
-        self.createDistanceLable(text:String(format: "%.2f", distance), from: points[0],to: points[1])
-        
-        let distance2 = calculatedistance(from: destination[1], to: destination[2])
-        
-        self.createDistanceLable(text:String(format: "%.2f", distance2), from: points[1],to: points[2])
-        
-        let distance3 = calculatedistance(from: destination[2], to: destination[0])
-        
-        self.createDistanceLable(text:String(format: "%.2f", distance3), from: points[2],to: points[0])
-    }
-    
-    func calculatedistance(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> CLLocationDistance {
-        let from = CLLocation(latitude: from.latitude, longitude: from.longitude)
-        let to = CLLocation(latitude: to.latitude, longitude: to.longitude)
-        return from.distance(from: to)/1000
-    }
-    
-    func calculateDistanceFromCurrentLocation(to: CLLocationCoordinate2D) -> String {
-        let to = CLLocation(latitude: to.latitude, longitude: to.longitude)
-        
-        return "\(String(format: "%.2f km", currentLocation.distance(from: to)/1000)) km"
-    }
     
     func removePin(coordinate : CLLocationCoordinate2D){
         for annotation in map.annotations {
@@ -248,7 +223,7 @@ class ViewController: UIViewController {
         map.addAnnotation(annotation)
     }
     
-    func getLocationAddressAndAddPin(latitude: CLLocationDegrees, longitude : CLLocationDegrees) {
+    func setDetailAndAddPin(latitude: CLLocationDegrees, longitude : CLLocationDegrees) {
         
         var center : CLLocationCoordinate2D = CLLocationCoordinate2D()
         let ceo: CLGeocoder = CLGeocoder()
@@ -259,53 +234,35 @@ class ViewController: UIViewController {
         
         ceo.reverseGeocodeLocation(loc, completionHandler:
                                     {(placemarks, error) in
-            if (error != nil)
-            {
-                print("reverse geodcode fail: \(error!.localizedDescription)")
-            }
+            
             let pm = placemarks! as [CLPlacemark]
             
             if pm.count > 0 {
                 if let placemark = placemarks?[0] {
                     var address = ""
-                    var location = ""
                     
                     if placemark.name != nil {
                         address += placemark.name! + " "
-                        location = placemark.name!
                     }
                     
-                    if placemark.subThoroughfare != nil {
-                        address += placemark.subThoroughfare! + " "
+                    var title = ""
+                    if self.dropCount == 1 {
+                        title = "A"
+                    } else if self.dropCount == 2 {
+                        title = "B"
+                    } else if self.dropCount == 3 {
+                        title = "C"
                     }
                     
-                    if placemark.thoroughfare != nil {
-                        address += placemark.thoroughfare! + "\n"
-                    }
-                    
-                    if placemark.subLocality != nil {
-                        address += placemark.subLocality! + "\n"
-                    }
-                    
-                    if placemark.subAdministrativeArea != nil {
-                        address += placemark.subAdministrativeArea! + "\n"
-                    }
-                    
-                    if placemark.postalCode != nil {
-                        address += placemark.postalCode! + "\n"
-                    }
-                    
-                    if placemark.country != nil {
-                        address += placemark.country! + "\n"
-                    }
-                    
-                    self.displayLocation(latitude: latitude, longitude: longitude, title: location, subtitle: address)
+                    self.displayLocation(latitude: latitude, longitude: longitude, title: title, subtitle: address)
                 }
             }
         })
     }
     
-    func createDistanceLable(text : String ,from : CGPoint, to : CGPoint){
+    //MARK: - Make Label
+    
+    func createDistanceLabel(text : String ,from : CGPoint, to : CGPoint){
         
         let position = getCenterPoints(from: from, to: to)
         
@@ -323,6 +280,26 @@ class ViewController: UIViewController {
         let dy = (from.y )
         
         return CGPoint(x: dx, y: dy)
+    }
+    
+    func addDistanceLable(){
+        let distance = calculateDistance(from: destination[0], to: destination[1])
+        
+        self.createDistanceLabel(text:String(format: "%.2f", distance), from: points[0],to: points[1])
+        
+        let distance2 = calculateDistance(from: destination[1], to: destination[2])
+        
+        self.createDistanceLabel(text:String(format: "%.2f", distance2), from: points[1],to: points[2])
+        
+        let distance3 = calculateDistance(from: destination[2], to: destination[0])
+        
+        self.createDistanceLabel(text:String(format: "%.2f", distance3), from: points[2],to: points[0])
+    }
+    
+    func calculateDistance(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> CLLocationDistance {
+        let from = CLLocation(latitude: from.latitude, longitude: from.longitude)
+        let to = CLLocation(latitude: to.latitude, longitude: to.longitude)
+        return from.distance(from: to)/1000
     }
 }
 
@@ -363,18 +340,15 @@ extension ViewController: MKMapViewDelegate {
 
             let titleLabel = UILabel(frame: CGRect(x: 0, y: 0, width: 50, height: 30))
             if dropCount == 1 {
-                titleLabel.text = "A"
                 distanceLabel.text = calculateDistanceFromCurrentLocation(to: destination[0])
             } else if dropCount == 2 {
-                titleLabel.text = "B"
                 distanceLabel.text = calculateDistanceFromCurrentLocation(to: destination[1])
             } else if dropCount == 3 {
-                titleLabel.text = "C"
                 distanceLabel.text = calculateDistanceFromCurrentLocation(to: destination[2])
             }
             
+            titleLabel.text = annotation.title as? String
             annotationView.rightCalloutAccessoryView = distanceLabel
-            
             titleLabel.backgroundColor = .clear
             titleLabel.textColor = .black
             titleLabel.font = .boldSystemFont(ofSize: 16)
@@ -390,19 +364,13 @@ extension ViewController: MKMapViewDelegate {
             annotationView.canShowCallout = true
             annotationView.rightCalloutAccessoryView = UIButton(type: .detailDisclosure)
             
-            let titleLabel = UILabel(frame: CGRect(x: 0, y: 0, width: 50, height: 30))
-            titleLabel.text = "Your Current Location"
-            titleLabel.tag = 42
-            titleLabel.backgroundColor = .clear
-            titleLabel.textColor = .black
-            titleLabel.font = .boldSystemFont(ofSize: 16)
-            titleLabel.textAlignment = .center
-            titleLabel.minimumScaleFactor = 0.5
-            annotationView.addSubview(titleLabel)
-            annotationView.frame = titleLabel.frame
-            
             return annotationView
         }
+    }
+    
+    func calculateDistanceFromCurrentLocation(to: CLLocationCoordinate2D) -> String {
+        let to = CLLocation(latitude: to.latitude, longitude: to.longitude)
+        return "\(String(format: "%.2f km", currentLocation.distance(from: to)/1000)) km"
     }
         
     //MARK: - callout accessory control tapped
@@ -426,7 +394,6 @@ extension ViewController: MKMapViewDelegate {
         } else if overlay is MKPolygon {
             let rendrer = MKPolygonRenderer(overlay: overlay)
             rendrer.fillColor = UIColor.red.withAlphaComponent(0.6)
-//          rendrer.lineDashPattern = [0,10]
             rendrer.strokeColor = UIColor.green
             rendrer.lineWidth = 2
             return rendrer
@@ -435,23 +402,8 @@ extension ViewController: MKMapViewDelegate {
     }
 }
 
-extension CLLocationCoordinate2D: Equatable {
-    
-    public static func == (lhs: CLLocationCoordinate2D, rhs: CLLocationCoordinate2D) -> Bool {
-        
-        let maxLat = lhs.latitude + 0.005
-        let minLat = lhs.latitude - 0.005
-        
-        let maxLong = lhs.longitude + 0.005
-        let minLong = lhs.longitude - 0.005
-        
-        return (maxLat >= rhs.latitude && rhs.latitude > minLat ) && (maxLong >= rhs.longitude && rhs.longitude > minLong)
-    }
-}
-
 extension ViewController: HandleMapSearch {
     func dropPinZoomIn(placemark:MKPlacemark){
-        // cache the pin
         selectedPin = placemark
         dropPin(sender: UITapGestureRecognizer())
     }

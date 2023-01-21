@@ -14,6 +14,7 @@
 		99E572D9297B44F900757538 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99E572D8297B44F900757538 /* Assets.xcassets */; };
 		99E572DC297B44F900757538 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 99E572DA297B44F900757538 /* LaunchScreen.storyboard */; };
 		99E572E4297B5C2600757538 /* LocationSearchTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E572E3297B5C2600757538 /* LocationSearchTable.swift */; };
+		99E572E6297B786F00757538 /* CLLocationCoordinate2D-Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E572E5297B786F00757538 /* CLLocationCoordinate2D-Extension.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +27,7 @@
 		99E572DB297B44F900757538 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		99E572DD297B44F900757538 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		99E572E3297B5C2600757538 /* LocationSearchTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationSearchTable.swift; sourceTree = "<group>"; };
+		99E572E5297B786F00757538 /* CLLocationCoordinate2D-Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CLLocationCoordinate2D-Extension.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,16 +60,49 @@
 		99E572CE297B44F600757538 /* A1_A2_iOS_Pennapar_c0874203 */ = {
 			isa = PBXGroup;
 			children = (
+				99E572EA297B7B5300757538 /* Support Files */,
+				99E572E9297B7B2E00757538 /* Controller */,
+				99E572E8297B7B2800757538 /* View */,
+				99E572E7297B7B2200757538 /* Model */,
 				99E572CF297B44F600757538 /* AppDelegate.swift */,
 				99E572D1297B44F600757538 /* SceneDelegate.swift */,
-				99E572D3297B44F600757538 /* ViewController.swift */,
-				99E572D5297B44F600757538 /* Main.storyboard */,
 				99E572D8297B44F900757538 /* Assets.xcassets */,
 				99E572DA297B44F900757538 /* LaunchScreen.storyboard */,
 				99E572DD297B44F900757538 /* Info.plist */,
-				99E572E3297B5C2600757538 /* LocationSearchTable.swift */,
 			);
 			path = A1_A2_iOS_Pennapar_c0874203;
+			sourceTree = "<group>";
+		};
+		99E572E7297B7B2200757538 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		99E572E8297B7B2800757538 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				99E572D5297B44F600757538 /* Main.storyboard */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		99E572E9297B7B2E00757538 /* Controller */ = {
+			isa = PBXGroup;
+			children = (
+				99E572D3297B44F600757538 /* ViewController.swift */,
+				99E572E3297B5C2600757538 /* LocationSearchTable.swift */,
+			);
+			path = Controller;
+			sourceTree = "<group>";
+		};
+		99E572EA297B7B5300757538 /* Support Files */ = {
+			isa = PBXGroup;
+			children = (
+				99E572E5297B786F00757538 /* CLLocationCoordinate2D-Extension.swift */,
+			);
+			path = "Support Files";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -142,6 +177,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				99E572D4297B44F600757538 /* ViewController.swift in Sources */,
+				99E572E6297B786F00757538 /* CLLocationCoordinate2D-Extension.swift in Sources */,
 				99E572D0297B44F600757538 /* AppDelegate.swift in Sources */,
 				99E572D2297B44F600757538 /* SceneDelegate.swift in Sources */,
 				99E572E4297B5C2600757538 /* LocationSearchTable.swift in Sources */,
