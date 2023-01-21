@@ -8,6 +8,10 @@
 import UIKit
 import MapKit
 
+protocol HandleMapSearch {
+    func dropPinZoomIn(placemark:MKPlacemark)
+}
+
 class ViewController: UIViewController {
     
     @IBOutlet weak var directBtn: UIButton!
@@ -22,10 +26,16 @@ class ViewController: UIViewController {
     var dropCount = 0
     var citySelection = false
     
+    var resultSearchController:UISearchController? = nil
+    var selectedPin:MKPlacemark? = nil
+    
+    var labels = [UILabel]()
+    var currentLocation = CLLocation()
+
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        map.isZoomEnabled = false
         map.showsUserLocation = true
         
         directBtn.isHidden = true
@@ -37,8 +47,24 @@ class ViewController: UIViewController {
         locationMnager.requestWhenInUseAuthorization()
         locationMnager.startUpdatingLocation()
         
-        // add double tap for add markers
-        addDoubleTap()
+        // add triple tap for add markers
+        addTripleTap()
+        
+        let locationSearchTable = storyboard!.instantiateViewController(withIdentifier: "LocationSearchTable") as! LocationSearchTable
+        resultSearchController = UISearchController(searchResultsController: locationSearchTable)
+        resultSearchController?.searchResultsUpdater = locationSearchTable as! any UISearchResultsUpdating
+        
+        let searchBar = resultSearchController!.searchBar
+        searchBar.sizeToFit()
+        searchBar.placeholder = "Search for places"
+        navigationItem.titleView = resultSearchController?.searchBar
+        
+        resultSearchController?.hidesNavigationBarDuringPresentation = false
+        resultSearchController?.dimsBackgroundDuringPresentation = true
+        definesPresentationContext = true
+        
+        locationSearchTable.mapView = map
+        locationSearchTable.handleMapSearchDelegate = self
     }
     
     func drawDestinationRoute(sourceCoordinate : CLLocationCoordinate2D , destinationCoordinate : CLLocationCoordinate2D){
@@ -71,6 +97,9 @@ class ViewController: UIViewController {
     
     @IBAction func currentLocationAction(_ sender: Any) {
         map.removeOverlays(map.overlays)
+        for label in labels {
+            label.removeFromSuperview()
+        }
         if destination.count == 3 {
             drawDestinationRoute(sourceCoordinate: destination[0], destinationCoordinate: destination[1])
             drawDestinationRoute(sourceCoordinate: destination[1], destinationCoordinate: destination[2])
@@ -79,11 +108,10 @@ class ViewController: UIViewController {
     }
     
     //MARK: - double tap func
-    func addDoubleTap() {
+    func addTripleTap() {
         let doubleTap = UITapGestureRecognizer(target: self, action: #selector(dropPin))
-        doubleTap.numberOfTapsRequired = 2
+        doubleTap.numberOfTapsRequired = 3
         map.addGestureRecognizer(doubleTap)
-        
     }
     
     //MARK: - polyline method
@@ -103,11 +131,18 @@ class ViewController: UIViewController {
     }
     
     @objc func dropPin(sender: UITapGestureRecognizer) {
+        
         if (dropCount < 3){
+            directBtn.isHidden = false
             citySelection = true
             // add annotation
             let touchPoint = sender.location(in: map)
-            let coordinate = map.convert(touchPoint, toCoordinateFrom: map)
+            var coordinate = CLLocationCoordinate2D()
+            if let selectPin = selectedPin {
+                coordinate = selectPin.coordinate
+            } else {
+                coordinate = map.convert(touchPoint, toCoordinateFrom: map)
+            }
             
             for des in destination {
                 if des == coordinate {
@@ -132,10 +167,18 @@ class ViewController: UIViewController {
         }
         else{
             citySelection = false
-            let alertController = UIAlertController(title: "Max Location Selection", message: "You already selected the maximum no of places", preferredStyle: .alert)
-            let cancelAction = UIAlertAction(title: "OK", style: .cancel, handler: nil)
-            alertController.addAction(cancelAction)
-            present(alertController, animated: true, completion: nil)
+            removePin()
+            dropCount = 0
+            selectedPin = nil
+            destination = []
+            points = []
+            map.removeOverlays(map.overlays)
+            
+            for label in labels {
+                label.removeFromSuperview()
+            }
+            
+            dropPin(sender: sender)
         }
     }
     
@@ -157,6 +200,12 @@ class ViewController: UIViewController {
         let from = CLLocation(latitude: from.latitude, longitude: from.longitude)
         let to = CLLocation(latitude: to.latitude, longitude: to.longitude)
         return from.distance(from: to)/1000
+    }
+    
+    func calculateDistanceFromCurrentLocation(to: CLLocationCoordinate2D) -> String {
+        let to = CLLocation(latitude: to.latitude, longitude: to.longitude)
+        
+        return "\(String(format: "%.2f km", currentLocation.distance(from: to)/1000)) km"
     }
     
     func removePin(coordinate : CLLocationCoordinate2D){
@@ -255,6 +304,26 @@ class ViewController: UIViewController {
             }
         })
     }
+    
+    func createDistanceLable(text : String ,from : CGPoint, to : CGPoint){
+        
+        let position = getCenterPoints(from: from, to: to)
+        
+        let label = UILabel(frame: CGRect(x: position.x, y: position.y, width: 100, height: 45))
+        label.textAlignment = .center
+        label.text = text + " km"
+        label.backgroundColor = UIColor.blue
+        label.textColor = UIColor.white
+        labels.append(label)
+        self.view.addSubview(label)
+    }
+    
+    private func getCenterPoints(from: CGPoint, to: CGPoint) -> CGPoint {
+        let dx = (from.x )
+        let dy = (from.y )
+        
+        return CGPoint(x: dx, y: dy)
+    }
 }
 
 extension ViewController: CLLocationManagerDelegate {
@@ -263,6 +332,7 @@ extension ViewController: CLLocationManagerDelegate {
         
         removePin()
         let userLocation = locations[0]
+        currentLocation = userLocation
         
         let latitude = userLocation.coordinate.latitude
         let longitude = userLocation.coordinate.longitude
@@ -284,18 +354,27 @@ extension ViewController: MKMapViewDelegate {
             annotationView.pinTintColor = #colorLiteral(red: 0.3647058904, green: 0.06666667014, blue: 0.9686274529, alpha: 1)
             annotationView.image = UIImage(named: "ic_place_2x")
             annotationView.canShowCallout = true
-            annotationView.rightCalloutAccessoryView = UIButton(type: .detailDisclosure)
             
+            let distanceLabel = UILabel(frame: CGRect(x: 0, y: 0, width: 50, height: 30))
+            distanceLabel.backgroundColor = .clear
+            distanceLabel.textColor = .black
+            distanceLabel.font = .boldSystemFont(ofSize: 10)
+            distanceLabel.textAlignment = .center
+
             let titleLabel = UILabel(frame: CGRect(x: 0, y: 0, width: 50, height: 30))
             if dropCount == 1 {
                 titleLabel.text = "A"
+                distanceLabel.text = calculateDistanceFromCurrentLocation(to: destination[0])
             } else if dropCount == 2 {
                 titleLabel.text = "B"
+                distanceLabel.text = calculateDistanceFromCurrentLocation(to: destination[1])
             } else if dropCount == 3 {
                 titleLabel.text = "C"
+                distanceLabel.text = calculateDistanceFromCurrentLocation(to: destination[2])
             }
             
-            titleLabel.tag = 42
+            annotationView.rightCalloutAccessoryView = distanceLabel
+            
             titleLabel.backgroundColor = .clear
             titleLabel.textColor = .black
             titleLabel.font = .boldSystemFont(ofSize: 16)
@@ -312,7 +391,7 @@ extension ViewController: MKMapViewDelegate {
             annotationView.rightCalloutAccessoryView = UIButton(type: .detailDisclosure)
             
             let titleLabel = UILabel(frame: CGRect(x: 0, y: 0, width: 50, height: 30))
-            titleLabel.text = "Hey"
+            titleLabel.text = "Your Current Location"
             titleLabel.tag = 42
             titleLabel.backgroundColor = .clear
             titleLabel.textColor = .black
@@ -370,26 +449,10 @@ extension CLLocationCoordinate2D: Equatable {
     }
 }
 
-extension UIViewController {
-    
-    func createDistanceLable(text : String ,from : CGPoint, to : CGPoint){
-        
-        let position = getCenterPoints(from: from, to: to)
-        
-        let label = UILabel(frame: CGRect(x: position.x, y: position.y, width: 100, height: 45))
-            label.textAlignment = .center
-            label.text = text + " km"
-        label.backgroundColor = UIColor.blue
-        label.textColor = UIColor.white
-            self.view.addSubview(label)
-    }
-    
-    private func getCenterPoints(from: CGPoint, to: CGPoint) -> CGPoint {
-        let dx = (from.x )
-        let dy = (from.y )
-        
-        return CGPoint(x: dx, y: dy)
+extension ViewController: HandleMapSearch {
+    func dropPinZoomIn(placemark:MKPlacemark){
+        // cache the pin
+        selectedPin = placemark
+        dropPin(sender: UITapGestureRecognizer())
     }
 }
-
-

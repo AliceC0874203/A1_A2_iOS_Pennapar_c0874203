@@ -13,6 +13,7 @@
 		99E572D7297B44F600757538 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 99E572D5297B44F600757538 /* Main.storyboard */; };
 		99E572D9297B44F900757538 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 99E572D8297B44F900757538 /* Assets.xcassets */; };
 		99E572DC297B44F900757538 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 99E572DA297B44F900757538 /* LaunchScreen.storyboard */; };
+		99E572E4297B5C2600757538 /* LocationSearchTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E572E3297B5C2600757538 /* LocationSearchTable.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		99E572D8297B44F900757538 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		99E572DB297B44F900757538 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		99E572DD297B44F900757538 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		99E572E3297B5C2600757538 /* LocationSearchTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationSearchTable.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +65,7 @@
 				99E572D8297B44F900757538 /* Assets.xcassets */,
 				99E572DA297B44F900757538 /* LaunchScreen.storyboard */,
 				99E572DD297B44F900757538 /* Info.plist */,
+				99E572E3297B5C2600757538 /* LocationSearchTable.swift */,
 			);
 			path = A1_A2_iOS_Pennapar_c0874203;
 			sourceTree = "<group>";
@@ -141,6 +144,7 @@
 				99E572D4297B44F600757538 /* ViewController.swift in Sources */,
 				99E572D0297B44F600757538 /* AppDelegate.swift in Sources */,
 				99E572D2297B44F600757538 /* SceneDelegate.swift in Sources */,
+				99E572E4297B5C2600757538 /* LocationSearchTable.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
